@@ -72,3 +72,5 @@ Todos los servicios deben usar el mismo `JWT_SECRET`.
 ## Despliegue
 
 `render.yaml` define el Blueprint para Render (plan gratuito); cada servicio se construye desde su `Dockerfile`.
+
+Producción: https://vantage-pmo-api-gateway.onrender.com/swagger (las instancias gratuitas se suspenden por inactividad; la primera petición puede tardar ~50 s).
