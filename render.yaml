@@ -6,6 +6,7 @@
 databases:
   - name: vantage-pmo-db
     plan: free
+    region: oregon
     databaseName: vantage_pmo
     user: vantage
 
@@ -20,12 +21,16 @@ services:
     name: vantage-pmo-api-gateway
     runtime: docker
     plan: free
-    rootDir: api-gateway
+    region: oregon
+    dockerContext: ./api-gateway
+    dockerfilePath: ./api-gateway/Dockerfile
+    buildFilter:
+      paths: ["api-gateway/**"]
     healthCheckPath: /health
     envVars:
       - fromGroup: vantage-security
       - key: PORT
-        value: 3000
+        value: "3000"
       - key: PUBLIC_URL
         value: https://vantage-pmo-api-gateway.onrender.com
       - key: IAM_SERVICE_URL
@@ -33,18 +38,22 @@ services:
       - key: PROJECT_TASK_SERVICE_URL
         value: https://vantage-pmo-project-task-service.onrender.com
       - key: UPSTREAM_TIMEOUT_MS
-        value: 60000   # free instances may need ~50 s to wake up
+        value: "60000"   # free instances may need ~50 s to wake up
 
   - type: web
     name: vantage-pmo-iam-service
     runtime: docker
     plan: free
-    rootDir: iam-service
+    region: oregon
+    dockerContext: ./iam-service
+    dockerfilePath: ./iam-service/Dockerfile
+    buildFilter:
+      paths: ["iam-service/**"]
     healthCheckPath: /health
     envVars:
       - fromGroup: vantage-security
       - key: PORT
-        value: 3001
+        value: "3001"
       - key: DATABASE_URL
         fromDatabase: { name: vantage-pmo-db, property: connectionString }
       - key: DB_SCHEMA
@@ -52,18 +61,22 @@ services:
       - key: DB_SYNCHRONIZE
         value: "true"
       - key: JWT_EXPIRES_IN
-        value: 3600
+        value: "3600"
 
   - type: web
     name: vantage-pmo-project-task-service
     runtime: docker
     plan: free
-    rootDir: project-task-service
+    region: oregon
+    dockerContext: ./project-task-service
+    dockerfilePath: ./project-task-service/Dockerfile
+    buildFilter:
+      paths: ["project-task-service/**"]
     healthCheckPath: /health
     envVars:
       - fromGroup: vantage-security
       - key: PORT
-        value: 3002
+        value: "3002"
       - key: DATABASE_URL
         fromDatabase: { name: vantage-pmo-db, property: connectionString }
       - key: DB_SCHEMA
