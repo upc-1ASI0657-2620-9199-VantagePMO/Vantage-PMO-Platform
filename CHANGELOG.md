@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.2] - 2026-10-10
+
+### Fixed
+- Blueprint de Render: se reutiliza la instancia PostgreSQL gratuita existente del workspace (el plan gratuito permite solo una); cada microservicio mantiene su esquema privado.
+
 ## [1.0.1] - 2026-10-10
 
 ### Fixed

@@ -2,14 +2,8 @@
 # Render -> New -> Blueprint -> select this repository.
 # Clients use only the API Gateway URL. Private services are not available on the free plan,
 # so each microservice also validates the JWT by itself (defense in depth).
-# Free plan allows a single PostgreSQL instance: each service owns a private schema (DB_SCHEMA).
-databases:
-  - name: vantage-pmo-db
-    plan: free
-    region: oregon
-    databaseName: vantage_pmo
-    user: vantage
-
+# Free plan allows a single PostgreSQL instance per workspace, so the services reuse the existing
+# free instance (smartgas-db); each service owns a private schema (DB_SCHEMA) that nobody else touches.
 envVarGroups:
   - name: vantage-security
     envVars:
@@ -55,7 +49,7 @@ services:
       - key: PORT
         value: "3001"
       - key: DATABASE_URL
-        fromDatabase: { name: vantage-pmo-db, property: connectionString }
+        fromDatabase: { name: smartgas-db, property: connectionString }
       - key: DB_SCHEMA
         value: iam
       - key: DB_SYNCHRONIZE
@@ -78,7 +72,7 @@ services:
       - key: PORT
         value: "3002"
       - key: DATABASE_URL
-        fromDatabase: { name: vantage-pmo-db, property: connectionString }
+        fromDatabase: { name: smartgas-db, property: connectionString }
       - key: DB_SCHEMA
         value: project_task
       - key: DB_SYNCHRONIZE
