@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.3] - 2026-10-10
+
+### Fixed
+- Project & Task Service: la consulta del portafolio (read model) califica las tablas con el esquema del servicio cuando se configura `DB_SCHEMA`.
+
 ## [1.0.2] - 2026-10-10
 
 ### Fixed
