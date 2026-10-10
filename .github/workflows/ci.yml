@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  unit-tests:
+    name: Build & unit tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api-gateway, iam-service, project-task-service]
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  acceptance-tests:
+    name: BDD acceptance tests (Gherkin)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vantage
+          POSTGRES_PASSWORD: vantage
+          POSTGRES_DB: vantage
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vantage" --health-interval 5s --health-retries 10
+    env:
+      JWT_SECRET: ci-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Create one database per service
+        run: |
+          PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE iam_db;"
+          PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE project_task_db;"
+      - name: Build services
+        run: for s in api-gateway iam-service project-task-service; do (cd $s && npm ci && npm run build); done
+      - name: Start services
+        run: |
+          (cd iam-service && PORT=3001 DATABASE_URL=postgres://vantage:vantage@localhost:5432/iam_db node dist/main.js &)
+          (cd project-task-service && PORT=3002 DATABASE_URL=postgres://vantage:vantage@localhost:5432/project_task_db node dist/main.js &)
+          (cd api-gateway && PORT=3000 IAM_SERVICE_URL=http://localhost:3001 PROJECT_TASK_SERVICE_URL=http://localhost:3002 node dist/main.js &)
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/health && break; sleep 2; done
+      - name: Run Cucumber
+        working-directory: tests/acceptance
+        run: npm ci && npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acceptance-report
+          path: tests/acceptance/reports/
