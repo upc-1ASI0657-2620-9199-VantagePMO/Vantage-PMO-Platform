@@ -1,0 +1,67 @@
+# Vantage PMO - local environment (Database per Service)
+# Usage: docker compose up --build   ->  Gateway + Swagger at http://localhost:3000/swagger
+name: vantage-pmo
+
+x-service-env: &jwt
+  JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+
+services:
+  iam-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: iam_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [iam-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d iam_db"]
+      interval: 5s
+      retries: 10
+
+  project-task-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: project_task_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [project-task-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d project_task_db"]
+      interval: 5s
+      retries: 10
+
+  iam-service:
+    build: ./iam-service
+    environment:
+      <<: *jwt
+      PORT: 3001
+      DATABASE_URL: postgres://vantage:vantage@iam-db:5432/iam_db
+      DB_SYNCHRONIZE: "true"
+      JWT_EXPIRES_IN: 3600
+    depends_on:
+      iam-db: { condition: service_healthy }
+
+  project-task-service:
+    build: ./project-task-service
+    environment:
+      <<: *jwt
+      PORT: 3002
+      DATABASE_URL: postgres://vantage:vantage@project-task-db:5432/project_task_db
+      DB_SYNCHRONIZE: "true"
+    depends_on:
+      project-task-db: { condition: service_healthy }
+
+  api-gateway:
+    build: ./api-gateway
+    ports: ["3000:3000"]
+    environment:
+      <<: *jwt
+      PORT: 3000
+      PUBLIC_URL: http://localhost:3000
+      IAM_SERVICE_URL: http://iam-service:3001
+      PROJECT_TASK_SERVICE_URL: http://project-task-service:3002
+    depends_on: [iam-service, project-task-service]
+
+volumes:
+  iam-data:
+  project-task-data:
