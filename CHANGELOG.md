@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-10-10
+
+### Fixed
+- Blueprint de Render: rutas explícitas de `dockerContext`/`dockerfilePath` por servicio, región fija y `buildFilter` para que cada microservicio solo se redespliegue cuando cambia su carpeta.
+
 ## [1.0.0] - 2026-10-10 — Sprint 1
 
 ### Added
