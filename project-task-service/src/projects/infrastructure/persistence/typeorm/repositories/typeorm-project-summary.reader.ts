@@ -25,8 +25,11 @@ export class TypeOrmProjectSummaryReader extends ProjectSummaryReader {
       where.push(`p.client ILIKE $${params.length}`);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    // Tables live in the service's private schema when DB_SCHEMA is configured (shared cloud instance).
+    const schema = (this.dataSource.options as { schema?: string }).schema;
+    const t = (table: string) => (schema ? `"${schema}"."${table}"` : table);
 
-    const [{ count }] = await this.dataSource.query(`SELECT COUNT(*)::int AS count FROM projects p ${whereSql}`, params);
+    const [{ count }] = await this.dataSource.query(`SELECT COUNT(*)::int AS count FROM ${t('projects')} p ${whereSql}`, params);
 
     const offset = (criteria.page - 1) * criteria.size;
     const rows = await this.dataSource.query(
@@ -34,11 +37,11 @@ export class TypeOrmProjectSummaryReader extends ProjectSummaryReader {
               COALESCE(t.total, 0)::int     AS total_tasks,
               COALESCE(t.completed, 0)::int AS completed_tasks,
               COALESCE(m.at_risk, 0)::int   AS milestones_at_risk
-         FROM projects p
+         FROM ${t('projects')} p
          LEFT JOIN (SELECT project_id, COUNT(*) AS total, COUNT(*) FILTER (WHERE status = 'DONE') AS completed
-                      FROM tasks GROUP BY project_id) t ON t.project_id = p.id
+                      FROM ${t('tasks')} GROUP BY project_id) t ON t.project_id = p.id
          LEFT JOIN (SELECT project_id, COUNT(*) AS at_risk
-                      FROM milestones
+                      FROM ${t('milestones')}
                      WHERE status = 'PENDING' AND due_date <= CURRENT_DATE + 3
                      GROUP BY project_id) m ON m.project_id = p.id
          ${whereSql}
