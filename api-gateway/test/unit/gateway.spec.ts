@@ -36,7 +36,7 @@ describe('API Gateway', () => {
       publicUrl: 'http://localhost:3000',
       upstreamTimeoutMs: 2000,
       breakerResetMs: 60000,
-      services: { iam: upstream.url, projectTask: upstream.url },
+      services: { iam: upstream.url, projectTask: upstream.url, resource: upstream.url, notification: upstream.url },
     };
   });
 

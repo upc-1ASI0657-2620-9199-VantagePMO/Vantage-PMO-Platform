@@ -7,6 +7,11 @@ describe('Gateway routing table', () => {
     ['/api/v1/projects', 'projectTask', false],
     ['/api/v1/projects/123/tasks', 'projectTask', false],
     ['/api/v1/tasks/123/completion', 'projectTask', false],
+    ['/api/v1/alerts/scan', 'projectTask', false],
+    ['/api/v1/projects/123/allocations', 'resource', false],
+    ['/api/v1/allocations/456', 'resource', false],
+    ['/api/v1/resources/availability', 'resource', false],
+    ['/api/v1/notifications/unread-count', 'notification', false],
   ])('routes %s to %s (public=%s)', (path, service, isPublic) => {
     const route = resolveRoute(path);
     expect(route?.service).toBe(service);

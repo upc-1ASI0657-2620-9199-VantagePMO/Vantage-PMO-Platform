@@ -11,6 +11,8 @@ export function docsRouter(config: GatewayConfig): Router {
   const specs: Record<string, { title: string; url: string }> = {
     iam: { title: 'IAM Service', url: `${config.services.iam}/swagger/json` },
     'project-task': { title: 'Project & Task Service', url: `${config.services.projectTask}/swagger/json` },
+    resource: { title: 'Resource Service', url: `${config.services.resource}/swagger/json` },
+    notification: { title: 'Notification Service', url: `${config.services.notification}/swagger/json` },
   };
 
   router.get('/docs/:service.json', async (req, res) => {

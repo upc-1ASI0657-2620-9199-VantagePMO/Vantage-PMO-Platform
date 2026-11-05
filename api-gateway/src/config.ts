@@ -4,7 +4,7 @@ export interface GatewayConfig {
   publicUrl: string;
   upstreamTimeoutMs: number;
   breakerResetMs: number;
-  services: { iam: string; projectTask: string };
+  services: { iam: string; projectTask: string; resource: string; notification: string };
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig {
@@ -23,6 +23,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): GatewayConfig 
     services: {
       iam: required('IAM_SERVICE_URL').replace(/\/$/, ''),
       projectTask: required('PROJECT_TASK_SERVICE_URL').replace(/\/$/, ''),
+      resource: required('RESOURCE_SERVICE_URL').replace(/\/$/, ''),
+      notification: required('NOTIFICATION_SERVICE_URL').replace(/\/$/, ''),
     },
   };
 }
