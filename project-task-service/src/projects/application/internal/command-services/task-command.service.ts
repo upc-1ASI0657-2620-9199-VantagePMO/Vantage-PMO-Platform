@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { EVENT_BUS, EventPublisher } from '@vantage-pmo/event-bus';
 import { DomainError, ResourceNotFoundError } from '../../../../shared/domain/domain-error';
 import { Task } from '../../../domain/model/aggregates/task';
 import {
@@ -6,6 +7,7 @@ import {
   CreateTaskCommand,
   SetTaskCompletionCommand,
 } from '../../../domain/model/commands/project-commands';
+import { ProjectEvents, TaskAssignedPayload } from '../../../domain/model/events/project-events';
 import { ProjectRepository } from '../../../domain/repositories/project.repository';
 import { TaskRepository } from '../../../domain/repositories/task.repository';
 
@@ -15,6 +17,7 @@ export class TaskCommandService {
   constructor(
     private readonly tasks: TaskRepository,
     private readonly projects: ProjectRepository,
+    @Inject(EVENT_BUS) private readonly events: EventPublisher,
   ) {}
 
   async handleCreate(command: CreateTaskCommand): Promise<Task> {
@@ -33,6 +36,16 @@ export class TaskCommandService {
     const task = await this.load(command.taskId);
     task.assignTo(command.memberId);
     await this.tasks.save(task);
+    const project = await this.projects.findById(task.projectId);
+    const payload: TaskAssignedPayload = {
+      taskId: task.id,
+      title: task.title,
+      projectId: task.projectId,
+      projectName: project?.name ?? '',
+      assigneeId: command.memberId,
+      dueDate: task.dueDate,
+    };
+    await this.events.publish(ProjectEvents.TASK_ASSIGNED, payload, `task-assigned:${task.id}:${command.memberId}`);
     return task;
   }
 
