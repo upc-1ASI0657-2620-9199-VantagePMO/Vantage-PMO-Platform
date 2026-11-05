@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { EVENT_BUS, EventPublisher } from '@vantage-pmo/event-bus';
 import { ConflictError, DomainError, InvalidCredentialsError } from '../../../../shared/domain/domain-error';
 import { User } from '../../../domain/model/aggregates/user';
 import { SignInCommand, SignUpCommand } from '../../../domain/model/commands/iam-commands';
+import { IamEvents, UserRegisteredPayload } from '../../../domain/model/events/iam-events';
 import { SELF_ASSIGNABLE_ROLES } from '../../../domain/model/value-objects/role';
 import { EmailAddress } from '../../../domain/model/value-objects/email-address';
 import { UserRepository } from '../../../domain/repositories/user.repository';
@@ -17,6 +19,7 @@ export class UserCommandService {
     private readonly users: UserRepository,
     private readonly hashing: HashingService,
     private readonly tokens: TokenService,
+    @Inject(EVENT_BUS) private readonly events: EventPublisher,
   ) {}
 
   async handleSignUp(command: SignUpCommand): Promise<User> {
@@ -30,6 +33,8 @@ export class UserCommandService {
     }
     const user = User.register(command.fullName, email, await this.hashing.hash(command.password), command.role);
     await this.users.save(user);
+    const payload: UserRegisteredPayload = { userId: user.id, fullName: user.fullName, email: user.email, role: user.role };
+    await this.events.publish(IamEvents.USER_REGISTERED, payload, `user-registered:${user.id}`);
     this.logger.log(`User ${user.id} registered with role ${user.role}`);
     return user;
   }

@@ -43,6 +43,13 @@ Given('I am signed in as a {string}', async function (role) {
 });
 
 Given('a team member is registered', async function () {
-  this.member = await this.signUp('Miembro del Equipo', this.uniqueEmail('member'), 'Vantage2026', 'MEMBER');
+  this.memberEmail = this.uniqueEmail('member');
+  this.member = await this.signUp('Miembro del Equipo', this.memberEmail, 'Vantage2026', 'MEMBER');
   assert.strictEqual(this.response.status, 201);
+});
+
+Given('the team member is signed in', async function () {
+  const body = await this.signIn(this.memberEmail, 'Vantage2026');
+  assert.strictEqual(this.response.status, 200);
+  this.memberToken = body.token;
 });

@@ -16,6 +16,22 @@ class VantageWorld {
     this.credentials = null;
   }
 
+  /**
+   * Events travel asynchronously between services (eventual consistency):
+   * retries an assertion until it passes or the timeout expires.
+   */
+  async eventually(assertion, timeoutMs = 10000, intervalMs = 400) {
+    const started = Date.now();
+    for (;;) {
+      try {
+        return await assertion();
+      } catch (error) {
+        if (Date.now() - started > timeoutMs) throw error;
+        await new Promise((r) => setTimeout(r, intervalMs));
+      }
+    }
+  }
+
   uniqueEmail(prefix = 'user') {
     return `${prefix}.${randomUUID().slice(0, 8)}@acceptance.vantagepmo.pe`;
   }

@@ -4,6 +4,9 @@
 # so each microservice also validates the JWT by itself (defense in depth).
 # Free plan allows a single PostgreSQL instance per workspace, so the services reuse the existing
 # free instance (smartgas-db); each service owns a private schema (DB_SCHEMA) that nobody else touches.
+# Sprint 2: asynchronous events travel through a Render Key Value instance (Redis compatible) using
+# Redis Streams with one consumer group per service (libs/event-bus). The services that use the
+# shared library are built from the repository root.
 envVarGroups:
   - name: vantage-security
     envVars:
@@ -31,6 +34,10 @@ services:
         value: https://vantage-pmo-iam-service.onrender.com
       - key: PROJECT_TASK_SERVICE_URL
         value: https://vantage-pmo-project-task-service.onrender.com
+      - key: RESOURCE_SERVICE_URL
+        value: https://vantage-pmo-resource-service.onrender.com
+      - key: NOTIFICATION_SERVICE_URL
+        value: https://vantage-pmo-notification-service.onrender.com
       - key: UPSTREAM_TIMEOUT_MS
         value: "60000"   # free instances may need ~50 s to wake up
 
@@ -39,10 +46,10 @@ services:
     runtime: docker
     plan: free
     region: oregon
-    dockerContext: ./iam-service
+    dockerContext: .
     dockerfilePath: ./iam-service/Dockerfile
     buildFilter:
-      paths: ["iam-service/**"]
+      paths: ["iam-service/**", "libs/**"]
     healthCheckPath: /health
     envVars:
       - fromGroup: vantage-security
@@ -56,16 +63,20 @@ services:
         value: "true"
       - key: JWT_EXPIRES_IN
         value: "3600"
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: vantage-pmo-event-broker, property: connectionString }
+      - key: SERVICE_NAME
+        value: iam
 
   - type: web
     name: vantage-pmo-project-task-service
     runtime: docker
     plan: free
     region: oregon
-    dockerContext: ./project-task-service
+    dockerContext: .
     dockerfilePath: ./project-task-service/Dockerfile
     buildFilter:
-      paths: ["project-task-service/**"]
+      paths: ["project-task-service/**", "libs/**"]
     healthCheckPath: /health
     envVars:
       - fromGroup: vantage-security
@@ -77,3 +88,67 @@ services:
         value: project_task
       - key: DB_SYNCHRONIZE
         value: "true"
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: vantage-pmo-event-broker, property: connectionString }
+      - key: SERVICE_NAME
+        value: project-task
+      - key: ALERT_SCAN_INTERVAL_MS
+        value: "3600000"
+
+  - type: web
+    name: vantage-pmo-resource-service
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerContext: .
+    dockerfilePath: ./resource-service/Dockerfile
+    buildFilter:
+      paths: ["resource-service/**", "libs/**"]
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: vantage-security
+      - key: PORT
+        value: "3003"
+      - key: DATABASE_URL
+        fromDatabase: { name: smartgas-db, property: connectionString }
+      - key: DB_SCHEMA
+        value: resource
+      - key: DB_SYNCHRONIZE
+        value: "true"
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: vantage-pmo-event-broker, property: connectionString }
+      - key: SERVICE_NAME
+        value: resource
+
+  - type: web
+    name: vantage-pmo-notification-service
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerContext: .
+    dockerfilePath: ./notification-service/Dockerfile
+    buildFilter:
+      paths: ["notification-service/**", "libs/**"]
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: vantage-security
+      - key: PORT
+        value: "3004"
+      - key: DATABASE_URL
+        fromDatabase: { name: smartgas-db, property: connectionString }
+      - key: DB_SCHEMA
+        value: notification
+      - key: DB_SYNCHRONIZE
+        value: "true"
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: vantage-pmo-event-broker, property: connectionString }
+      - key: SERVICE_NAME
+        value: notification
+
+  # Event broker: Redis Streams on Render Key Value (internal connections only).
+  - type: keyvalue
+    name: vantage-pmo-event-broker
+    plan: free
+    region: oregon
+    ipAllowList: []
+    maxmemoryPolicy: noeviction

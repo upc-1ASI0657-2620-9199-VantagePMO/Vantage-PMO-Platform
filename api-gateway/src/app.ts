@@ -13,6 +13,8 @@ export function createApp(config: GatewayConfig): { app: Express; proxies: Recor
   const proxies: Record<ServiceName, ServiceProxy> = {
     iam: new ServiceProxy('IAM Service', config.services.iam, options),
     projectTask: new ServiceProxy('Project & Task Service', config.services.projectTask, options),
+    resource: new ServiceProxy('Resource Service', config.services.resource, options),
+    notification: new ServiceProxy('Notification Service', config.services.notification, options),
   };
 
   app.disable('x-powered-by');
@@ -49,10 +51,9 @@ export function createApp(config: GatewayConfig): { app: Express; proxies: Recor
         return { status: 'DOWN', circuit: proxies[name].state };
       }
     };
-    const services = {
-      iam: await check('iam', config.services.iam),
-      projectTask: await check('projectTask', config.services.projectTask),
-    };
+    const names = Object.keys(config.services) as ServiceName[];
+    const results = await Promise.all(names.map((name) => check(name, config.services[name])));
+    const services = Object.fromEntries(names.map((name, i) => [name, results[i]]));
     const allUp = Object.values(services).every((s) => s.status === 'UP');
     res.status(allUp ? 200 : 207).json({ service: 'api-gateway', status: allUp ? 'UP' : 'DEGRADED', services });
   });
