@@ -17,7 +17,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Vantage PMO - Resource Service')
     .setDescription('Supporting microservice: allocation of team members to projects and their available capacity.')
-    .setVersion('1.0.0')
+    .setVersion('1.1.0')
     .addBearerAuth()
     .build();
   SwaggerModule.setup('swagger', app, SwaggerModule.createDocument(app, config), { jsonDocumentUrl: 'swagger/json' });

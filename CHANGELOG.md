@@ -2,6 +2,21 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-11-05 — Sprint 2
+
+### Added
+- **libs/event-bus** (`@vantage-pmo/event-bus`): librería propia de publicación/suscripción con puertos `EventPublisher`/`EventSubscriber` y adaptadores Redis Streams (consumer groups, ACK explícito, reintentos) e in-memory.
+- **Resource Service**: asignación de miembros a proyectos con rol, porcentaje de dedicación y periodo (US14), detección de sobreasignación y disponibilidad por periodo (US15). Réplicas locales de miembros y proyectos sincronizadas por eventos.
+- **Notification Service**: notificaciones in-app generadas a partir de eventos, consumo idempotente, campanita con contador de no leídas (US63) y canal de correo para alertas urgentes.
+- **Project & Task Service**: eventos de integración (proyecto registrado/actualizado/cambio de estado, tarea asignada) y tarea programada de alertas: hitos que vencen en 24 h (US09) y proyectos sin cambios en 72 h (US10, US53), con `POST /api/v1/alerts/scan`.
+- **IAM Service**: evento `iam.user-registered` y reenvío del directorio de usuarios al iniciar.
+- **API Gateway**: rutas y circuit breakers para Resource y Notification; Swagger agregado con los cuatro servicios.
+- Pruebas unitarias, 23 escenarios BDD nuevos y colección Postman del Sprint 2.
+- Render: instancia Key Value (`vantage-pmo-event-broker`) y dos nuevos web services.
+
+### Changed
+- Las imágenes Docker de los servicios que usan la librería se construyen desde la raíz del repositorio.
+
 ## [1.0.3] - 2026-10-10
 
 ### Fixed
