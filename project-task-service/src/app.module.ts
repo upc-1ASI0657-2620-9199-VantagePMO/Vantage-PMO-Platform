@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { types } from 'pg';
 import { HealthController } from './shared/interfaces/rest/health.controller';
 import { ProjectsModule } from './projects/projects.module';
+import { EventBusModule } from './shared/infrastructure/messaging/event-bus.module';
 
 // Return PostgreSQL DATE columns as plain 'YYYY-MM-DD' strings (no timezone shift).
 types.setTypeParser(1082, (value: string) => value);
@@ -22,6 +23,7 @@ types.setTypeParser(1082, (value: string) => value);
         ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
       }),
     }),
+    EventBusModule,
     ProjectsModule,
   ],
   controllers: [HealthController],

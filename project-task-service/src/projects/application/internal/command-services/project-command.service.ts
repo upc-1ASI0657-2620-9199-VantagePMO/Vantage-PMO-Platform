@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { EVENT_BUS, EventPublisher } from '@vantage-pmo/event-bus';
 import { ResourceNotFoundError } from '../../../../shared/domain/domain-error';
 import { Project } from '../../../domain/model/aggregates/project';
 import { Milestone } from '../../../domain/model/entities/milestone';
@@ -8,6 +9,7 @@ import {
   UpdateProjectCommand,
   UpdateProjectStatusCommand,
 } from '../../../domain/model/commands/project-commands';
+import { ProjectEvents, ProjectSnapshotPayload } from '../../../domain/model/events/project-events';
 import { ProjectRepository } from '../../../domain/repositories/project.repository';
 
 /** Application service that orchestrates the write use cases of the Project aggregate. */
@@ -15,11 +17,15 @@ import { ProjectRepository } from '../../../domain/repositories/project.reposito
 export class ProjectCommandService {
   private readonly logger = new Logger(ProjectCommandService.name);
 
-  constructor(private readonly projects: ProjectRepository) {}
+  constructor(
+    private readonly projects: ProjectRepository,
+    @Inject(EVENT_BUS) private readonly events: EventPublisher,
+  ) {}
 
   async handleCreate(command: CreateProjectCommand): Promise<Project> {
     const project = Project.create(command);
     await this.projects.save(project);
+    await this.events.publish(ProjectEvents.PROJECT_REGISTERED, ProjectCommandService.snapshot(project));
     this.logger.log(`Project ${project.id} created by user ${command.ownerId}`);
     return project;
   }
@@ -28,6 +34,7 @@ export class ProjectCommandService {
     const project = await this.load(command.projectId);
     project.updateDetails(command);
     await this.projects.save(project);
+    await this.events.publish(ProjectEvents.PROJECT_UPDATED, ProjectCommandService.snapshot(project));
     return project;
   }
 
@@ -36,6 +43,7 @@ export class ProjectCommandService {
     const previous = project.status;
     project.updateStatus(command.status);
     await this.projects.save(project);
+    await this.events.publish(ProjectEvents.PROJECT_STATUS_CHANGED, { ...ProjectCommandService.snapshot(project), previousStatus: previous });
     this.logger.log(`Project ${project.id} status changed ${previous} -> ${project.status}`);
     return project;
   }
@@ -45,6 +53,18 @@ export class ProjectCommandService {
     const milestone = project.addMilestone(command.name, command.dueDate);
     await this.projects.save(project);
     return milestone;
+  }
+
+  private static snapshot(project: Project): ProjectSnapshotPayload {
+    return {
+      projectId: project.id,
+      name: project.name,
+      client: project.client,
+      ownerId: project.ownerId,
+      status: project.status,
+      startDate: project.startDate,
+      endDate: project.endDate,
+    };
   }
 
   private async load(projectId: string): Promise<Project> {
