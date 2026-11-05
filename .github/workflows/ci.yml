@@ -7,12 +7,34 @@ on:
     branches: [main, develop]
 
 jobs:
+  event-bus-library:
+    name: Build & test libs/event-bus
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    defaults:
+      run:
+        working-directory: libs/event-bus
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+        env:
+          REDIS_URL: redis://localhost:6379
+
   unit-tests:
     name: Build & unit tests (${{ matrix.service }})
     runs-on: ubuntu-latest
+    needs: event-bus-library
     strategy:
       matrix:
-        service: [api-gateway, iam-service, project-task-service]
+        service: [api-gateway, iam-service, project-task-service, resource-service, notification-service]
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -23,6 +45,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ${{ matrix.service }}/package-lock.json
+      - name: Build the shared event-bus library
+        run: npm ci && npm run build
+        working-directory: libs/event-bus
       - run: npm ci
       - run: npm run build
       - run: npm test
@@ -41,8 +66,12 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U vantage" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
     env:
       JWT_SECRET: ci-secret
+      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,15 +79,20 @@ jobs:
           node-version: 22
       - name: Create one database per service
         run: |
-          PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE iam_db;"
-          PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE project_task_db;"
+          for db in iam_db project_task_db resource_db notification_db; do
+            PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE $db;"
+          done
       - name: Build services
-        run: for s in api-gateway iam-service project-task-service; do (cd $s && npm ci && npm run build); done
+        run: |
+          (cd libs/event-bus && npm ci && npm run build)
+          for s in api-gateway iam-service project-task-service resource-service notification-service; do (cd $s && npm ci && npm run build); done
       - name: Start services
         run: |
-          (cd iam-service && PORT=3001 DATABASE_URL=postgres://vantage:vantage@localhost:5432/iam_db node dist/main.js &)
-          (cd project-task-service && PORT=3002 DATABASE_URL=postgres://vantage:vantage@localhost:5432/project_task_db node dist/main.js &)
-          (cd api-gateway && PORT=3000 IAM_SERVICE_URL=http://localhost:3001 PROJECT_TASK_SERVICE_URL=http://localhost:3002 node dist/main.js &)
+          (cd iam-service && PORT=3001 SERVICE_NAME=iam DATABASE_URL=postgres://vantage:vantage@localhost:5432/iam_db node dist/main.js &)
+          (cd project-task-service && PORT=3002 SERVICE_NAME=project-task ALERT_SCAN_INTERVAL_MS=0 DATABASE_URL=postgres://vantage:vantage@localhost:5432/project_task_db node dist/main.js &)
+          (cd resource-service && PORT=3003 SERVICE_NAME=resource DATABASE_URL=postgres://vantage:vantage@localhost:5432/resource_db node dist/main.js &)
+          (cd notification-service && PORT=3004 SERVICE_NAME=notification DATABASE_URL=postgres://vantage:vantage@localhost:5432/notification_db node dist/main.js &)
+          (cd api-gateway && PORT=3000 IAM_SERVICE_URL=http://localhost:3001 PROJECT_TASK_SERVICE_URL=http://localhost:3002 RESOURCE_SERVICE_URL=http://localhost:3003 NOTIFICATION_SERVICE_URL=http://localhost:3004 node dist/main.js &)
           for i in $(seq 1 30); do curl -sf http://localhost:3000/health && break; sleep 2; done
       - name: Run Cucumber
         working-directory: tests/acceptance

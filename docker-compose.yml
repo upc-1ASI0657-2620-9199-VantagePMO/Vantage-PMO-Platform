@@ -30,26 +30,90 @@ services:
       interval: 5s
       retries: 10
 
+  event-broker:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  resource-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: resource_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [resource-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d resource_db"]
+      interval: 5s
+      retries: 10
+
+  notification-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [notification-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d notification_db"]
+      interval: 5s
+      retries: 10
+
   iam-service:
-    build: ./iam-service
+    build: { context: ., dockerfile: iam-service/Dockerfile }
     environment:
       <<: *jwt
       PORT: 3001
       DATABASE_URL: postgres://vantage:vantage@iam-db:5432/iam_db
       DB_SYNCHRONIZE: "true"
       JWT_EXPIRES_IN: 3600
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: iam
     depends_on:
       iam-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
 
   project-task-service:
-    build: ./project-task-service
+    build: { context: ., dockerfile: project-task-service/Dockerfile }
     environment:
       <<: *jwt
       PORT: 3002
       DATABASE_URL: postgres://vantage:vantage@project-task-db:5432/project_task_db
       DB_SYNCHRONIZE: "true"
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: project-task
     depends_on:
       project-task-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
+
+  resource-service:
+    build: { context: ., dockerfile: resource-service/Dockerfile }
+    environment:
+      <<: *jwt
+      PORT: 3003
+      DATABASE_URL: postgres://vantage:vantage@resource-db:5432/resource_db
+      DB_SYNCHRONIZE: "true"
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: resource
+    depends_on:
+      resource-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
+
+  notification-service:
+    build: { context: ., dockerfile: notification-service/Dockerfile }
+    environment:
+      <<: *jwt
+      PORT: 3004
+      DATABASE_URL: postgres://vantage:vantage@notification-db:5432/notification_db
+      DB_SYNCHRONIZE: "true"
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: notification
+    depends_on:
+      notification-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
 
   api-gateway:
     build: ./api-gateway
@@ -60,8 +124,12 @@ services:
       PUBLIC_URL: http://localhost:3000
       IAM_SERVICE_URL: http://iam-service:3001
       PROJECT_TASK_SERVICE_URL: http://project-task-service:3002
-    depends_on: [iam-service, project-task-service]
+      RESOURCE_SERVICE_URL: http://resource-service:3003
+      NOTIFICATION_SERVICE_URL: http://notification-service:3004
+    depends_on: [iam-service, project-task-service, resource-service, notification-service]
 
 volumes:
   iam-data:
   project-task-data:
+  resource-data:
+  notification-data:
