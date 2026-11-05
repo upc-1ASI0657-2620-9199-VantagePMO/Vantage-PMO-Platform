@@ -17,7 +17,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Vantage PMO - Notification Service')
     .setDescription('Generic microservice: in-app notifications (bell) and alerts produced from the domain events of the platform.')
-    .setVersion('1.0.0')
+    .setVersion('1.1.0')
     .addBearerAuth()
     .build();
   SwaggerModule.setup('swagger', app, SwaggerModule.createDocument(app, config), { jsonDocumentUrl: 'swagger/json' });
