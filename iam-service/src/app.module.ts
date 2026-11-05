@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthController } from './shared/interfaces/rest/health.controller';
+import { EventBusModule } from './shared/infrastructure/messaging/event-bus.module';
 import { IamModule } from './iam/iam.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { IamModule } from './iam/iam.module';
         ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
       }),
     }),
+    EventBusModule,
     IamModule,
   ],
   controllers: [HealthController],

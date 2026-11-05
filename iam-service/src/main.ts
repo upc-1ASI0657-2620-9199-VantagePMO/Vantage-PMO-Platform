@@ -10,13 +10,14 @@ async function bootstrap() {
   await ensureSchema();
   const app = await NestFactory.create(AppModule);
   app.enableCors();
+  app.enableShutdownHooks();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   app.useGlobalFilters(new ProblemDetailsFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Vantage PMO - IAM Service')
     .setDescription('Identity & Access Management: user registration, authentication and JWT issuing.')
-    .setVersion('1.0.0')
+    .setVersion('1.1.0')
     .addBearerAuth()
     .build();
   SwaggerModule.setup('swagger', app, SwaggerModule.createDocument(app, config), { jsonDocumentUrl: 'swagger/json' });

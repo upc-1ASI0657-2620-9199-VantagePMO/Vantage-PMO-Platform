@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserCommandService } from './application/internal/command-services/user-command.service';
 import { HashingService } from './application/internal/outbound-services/hashing.service';
 import { TokenService } from './application/internal/outbound-services/token.service';
+import { UserSnapshotReplayService } from './application/internal/scheduled/user-snapshot-replay.service';
 import { UserQueryService } from './application/internal/query-services/user-query.service';
 import { UserRepository } from './domain/repositories/user.repository';
 import { BcryptHashingService } from './infrastructure/hashing/bcrypt-hashing.service';
@@ -19,6 +20,7 @@ import { UsersController } from './interfaces/rest/users.controller';
   providers: [
     UserCommandService,
     UserQueryService,
+    UserSnapshotReplayService,
     { provide: UserRepository, useClass: TypeOrmUserRepository },
     { provide: HashingService, useClass: BcryptHashingService },
     { provide: TokenService, useClass: JwtTokenService },

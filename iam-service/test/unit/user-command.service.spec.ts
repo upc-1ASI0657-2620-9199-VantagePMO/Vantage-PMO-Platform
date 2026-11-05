@@ -1,3 +1,4 @@
+import { InMemoryEventBus } from '@vantage-pmo/event-bus';
 import { UserCommandService } from '../../src/iam/application/internal/command-services/user-command.service';
 import { HashingService } from '../../src/iam/application/internal/outbound-services/hashing.service';
 import { IssuedToken, TokenService } from '../../src/iam/application/internal/outbound-services/token.service';
@@ -26,11 +27,13 @@ describe('UserCommandService', () => {
   let repo: InMemoryUserRepository;
   let hashing: HashingService;
   let service: UserCommandService;
+  let bus: InMemoryEventBus;
 
   beforeEach(() => {
     repo = new InMemoryUserRepository();
     hashing = new BcryptHashingService();
-    service = new UserCommandService(repo, hashing, new FakeTokenService());
+    bus = new InMemoryEventBus('iam');
+    service = new UserCommandService(repo, hashing, new FakeTokenService(), bus);
   });
 
   it('stores only a BCrypt hash, never the plain password (US51)', async () => {
@@ -39,6 +42,14 @@ describe('UserCommandService', () => {
     expect(user.passwordHash).not.toBe('Segura2026');
     expect(user.passwordHash).toMatch(/^\$2[aby]\$10\$/);
     expect(await hashing.verify('Segura2026', user.passwordHash)).toBe(true);
+  });
+
+  it('announces the new member with iam.user-registered and never shares the password hash', async () => {
+    const user = await service.handleSignUp(new SignUpCommand('Luis Pérez', 'luis@vantage.pe', 'Segura2026', Role.MEMBER));
+    expect(bus.published).toHaveLength(1);
+    expect(bus.published[0].type).toBe('iam.user-registered');
+    expect(bus.published[0].payload).toEqual({ userId: user.id, fullName: 'Luis Pérez', email: 'luis@vantage.pe', role: 'MEMBER' });
+    expect(JSON.stringify(bus.published[0])).not.toContain(user.passwordHash);
   });
 
   it('rejects duplicated e-mails', async () => {

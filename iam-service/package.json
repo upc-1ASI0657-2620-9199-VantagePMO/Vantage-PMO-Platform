@@ -1,6 +1,6 @@
 {
   "name": "iam-service",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Vantage PMO - Identity & Access Management bounded context",
   "private": true,
   "license": "UNLICENSED",
@@ -34,6 +34,7 @@
     "@nestjs/platform-express": "^11.2.7",
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/typeorm": "^11.0.3",
+    "@vantage-pmo/event-bus": "file:../libs/event-bus",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
