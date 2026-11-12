@@ -2,6 +2,11 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.2.1] - 2026-11-12
+
+### Fixed
+- **Document Service**: los campos opcionales vacíos de la subida multipart (`taskId`, `milestoneId`, `requirementId`, `name`), que envían Swagger UI y los formularios HTML, se ignoran en lugar de responder 400.
+
 ## [1.2.0] - 2026-11-12 — Sprint 3
 
 ### Added

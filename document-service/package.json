@@ -1,6 +1,6 @@
 {
   "name": "document-service",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vantage PMO - Document Management bounded context (versioned documents and mandatory milestone documents)",
   "private": true,
   "license": "UNLICENSED",

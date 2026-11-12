@@ -1,22 +1,29 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+
+/** HTML forms and Swagger UI send optional multipart fields as empty strings: treat them as absent. */
+const emptyAsUndefined = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value));
 
 /** Text fields of the multipart upload (validated). The binary arrives through @UploadedFile. */
 export class UploadDocumentResource {
   @ApiPropertyOptional({ example: 'Acta de aceptación', description: 'Logical name; uploading again with the same name creates a new version (US35). Defaults to the requirement name or the file name.' })
+  @emptyAsUndefined()
   @IsOptional() @IsString() @IsNotEmpty() @MaxLength(150)
   name?: string;
 
   @ApiPropertyOptional({ format: 'uuid', description: 'Attach the document to a task (US05)' })
+  @emptyAsUndefined()
   @IsOptional() @IsUUID()
   taskId?: string;
 
   @ApiPropertyOptional({ format: 'uuid', description: 'Attach the document to a milestone' })
+  @emptyAsUndefined()
   @IsOptional() @IsUUID()
   milestoneId?: string;
 
   @ApiPropertyOptional({ format: 'uuid', description: 'Mandatory document that this upload fulfills (US21)' })
+  @emptyAsUndefined()
   @IsOptional() @IsUUID()
   requirementId?: string;
 }

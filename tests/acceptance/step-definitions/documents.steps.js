@@ -23,6 +23,10 @@ When('I upload the file {string} of type {string} with content {string} to the t
   await upload(this, fileName, type, content, { taskId: this.task.id });
 });
 
+When('I upload the file {string} with content {string} leaving the optional fields empty', async function (fileName, content) {
+  await upload(this, fileName, 'application/pdf', content, { name: '', taskId: '', milestoneId: '', requirementId: '' });
+});
+
 async function download(world, version) {
   const query = version ? `?version=${version}` : '';
   const res = await fetch(`${world.baseUrl}/api/v1/documents/${world.document.id}/content${query}`, { headers: { Authorization: `Bearer ${world.token}` } });
