@@ -6,6 +6,8 @@ export const ProjectEvents = {
   TASK_ASSIGNED: 'projects.task-assigned',
   MILESTONE_DUE_SOON: 'projects.milestone-due-soon',
   PROJECT_STALLED: 'projects.project-stalled',
+  MILESTONE_ADDED: 'projects.milestone-added',
+  MILESTONE_COMPLETED: 'projects.milestone-completed',
 } as const;
 
 export interface ProjectSnapshotPayload {
@@ -44,3 +46,21 @@ export interface ProjectStalledPayload {
   lastActivityAt: string;
   inactiveHours: number;
 }
+
+export interface MilestonePayload {
+  projectId: string;
+  projectName: string;
+  ownerId: string;
+  milestoneId: string;
+  milestoneName: string;
+  dueDate: string;
+  status: string;
+  replay?: boolean;
+}
+
+/** Events of the Document context that Project & Task consumes (US21, US22). */
+export const DocumentEvents = {
+  REQUIREMENT_DEFINED: 'documents.requirement-defined',
+  REQUIREMENT_FULFILLED: 'documents.requirement-fulfilled',
+  REQUIREMENT_REMOVED: 'documents.requirement-removed',
+} as const;

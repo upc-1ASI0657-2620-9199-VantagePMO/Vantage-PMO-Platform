@@ -5,11 +5,13 @@ import { Project } from '../../../domain/model/aggregates/project';
 import { Milestone } from '../../../domain/model/entities/milestone';
 import {
   AddMilestoneCommand,
+  CompleteMilestoneCommand,
   CreateProjectCommand,
   UpdateProjectCommand,
   UpdateProjectStatusCommand,
 } from '../../../domain/model/commands/project-commands';
-import { ProjectEvents, ProjectSnapshotPayload } from '../../../domain/model/events/project-events';
+import { MilestonePayload, ProjectEvents, ProjectSnapshotPayload } from '../../../domain/model/events/project-events';
+import { MilestoneDocumentRequirementRepository } from '../../../domain/repositories/milestone-document-requirement.repository';
 import { ProjectRepository } from '../../../domain/repositories/project.repository';
 
 /** Application service that orchestrates the write use cases of the Project aggregate. */
@@ -20,6 +22,7 @@ export class ProjectCommandService {
   constructor(
     private readonly projects: ProjectRepository,
     @Inject(EVENT_BUS) private readonly events: EventPublisher,
+    private readonly documentRequirements: MilestoneDocumentRequirementRepository,
   ) {}
 
   async handleCreate(command: CreateProjectCommand): Promise<Project> {
@@ -52,7 +55,26 @@ export class ProjectCommandService {
     const project = await this.load(command.projectId);
     const milestone = project.addMilestone(command.name, command.dueDate);
     await this.projects.save(project);
+    await this.events.publish(ProjectEvents.MILESTONE_ADDED, ProjectCommandService.milestonePayload(project, milestone));
     return milestone;
+  }
+
+  /** US22 / US49: completes a milestone only when all its mandatory documents were uploaded. */
+  async handleCompleteMilestone(command: CompleteMilestoneCommand): Promise<Milestone> {
+    const project = await this.load(command.projectId);
+    const pending = await this.documentRequirements.findPendingByMilestone(command.milestoneId);
+    const milestone = project.completeMilestone(command.milestoneId, pending.map((r) => r.name));
+    await this.projects.save(project);
+    await this.events.publish(ProjectEvents.MILESTONE_COMPLETED, ProjectCommandService.milestonePayload(project, milestone), `milestone-completed:${milestone.id}`);
+    this.logger.log(`Milestone ${milestone.id} of project ${project.id} completed`);
+    return milestone;
+  }
+
+  static milestonePayload(project: Project, milestone: Milestone): MilestonePayload {
+    return {
+      projectId: project.id, projectName: project.name, ownerId: project.ownerId,
+      milestoneId: milestone.id, milestoneName: milestone.name, dueDate: milestone.dueDate, status: milestone.status,
+    };
   }
 
   private static snapshot(project: Project): ProjectSnapshotPayload {

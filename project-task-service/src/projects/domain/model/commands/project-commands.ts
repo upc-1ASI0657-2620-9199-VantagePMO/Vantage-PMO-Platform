@@ -31,6 +31,10 @@ export class AddMilestoneCommand {
   constructor(public readonly projectId: string, public readonly name: string, public readonly dueDate: string) {}
 }
 
+export class CompleteMilestoneCommand {
+  constructor(public readonly projectId: string, public readonly milestoneId: string) {}
+}
+
 export class CreateTaskCommand {
   constructor(
     public readonly projectId: string,

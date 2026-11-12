@@ -51,6 +51,17 @@ export class TypeOrmProjectAlertReader extends ProjectAlertReader {
     }));
   }
 
+  async findAllMilestones() {
+    const rows = await this.dataSource.query(
+      `SELECT m.id, m.name, m.due_date, m.status, p.id AS project_id, p.name AS project_name, p.owner_id
+         FROM ${this.t('milestones')} m JOIN ${this.t('projects')} p ON p.id = m.project_id`,
+    );
+    return rows.map((r: any) => ({
+      projectId: r.project_id, projectName: r.project_name, ownerId: r.owner_id,
+      milestoneId: r.id, milestoneName: r.name, dueDate: toIsoDate(r.due_date), status: r.status,
+    }));
+  }
+
   async findAllSnapshots() {
     const rows = await this.dataSource.query(
       `SELECT id, name, client, owner_id, status, start_date, end_date FROM ${this.t('projects')}`,
