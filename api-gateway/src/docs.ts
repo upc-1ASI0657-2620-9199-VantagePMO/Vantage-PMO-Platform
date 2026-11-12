@@ -13,6 +13,8 @@ export function docsRouter(config: GatewayConfig): Router {
     'project-task': { title: 'Project & Task Service', url: `${config.services.projectTask}/swagger/json` },
     resource: { title: 'Resource Service', url: `${config.services.resource}/swagger/json` },
     notification: { title: 'Notification Service', url: `${config.services.notification}/swagger/json` },
+    document: { title: 'Document Service', url: `${config.services.document}/swagger/json` },
+    risk: { title: 'Risk Service', url: `${config.services.risk}/swagger/json` },
   };
 
   router.get('/docs/:service.json', async (req, res) => {

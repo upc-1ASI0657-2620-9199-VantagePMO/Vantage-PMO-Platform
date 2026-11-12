@@ -15,6 +15,8 @@ export function createApp(config: GatewayConfig): { app: Express; proxies: Recor
     projectTask: new ServiceProxy('Project & Task Service', config.services.projectTask, options),
     resource: new ServiceProxy('Resource Service', config.services.resource, options),
     notification: new ServiceProxy('Notification Service', config.services.notification, options),
+    document: new ServiceProxy('Document Service', config.services.document, options),
+    risk: new ServiceProxy('Risk Service', config.services.risk, options),
   };
 
   app.disable('x-powered-by');

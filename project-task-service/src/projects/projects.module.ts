@@ -8,6 +8,10 @@ import { ProjectQueryService } from './application/internal/query-services/proje
 import { ProjectRepository } from './domain/repositories/project.repository';
 import { ProjectSummaryReader } from './domain/repositories/project-summary.reader';
 import { TaskRepository } from './domain/repositories/task.repository';
+import { MilestoneDocumentRequirementRepository } from './domain/repositories/milestone-document-requirement.repository';
+import { TypeOrmMilestoneDocumentRequirementRepository } from './infrastructure/persistence/typeorm/repositories/typeorm-milestone-document-requirement.repository';
+import { MilestoneDocumentRequirementOrmEntity } from './infrastructure/persistence/typeorm/entities/milestone-document-requirement.orm-entity';
+import { DocumentRequirementSyncHandler } from './application/internal/event-handlers/document-requirement-sync.handler';
 import { ProjectAlertReader } from './domain/repositories/project-alert.reader';
 import { TypeOrmProjectAlertReader } from './infrastructure/persistence/typeorm/repositories/typeorm-project-alert.reader';
 import { AlertsController } from './interfaces/rest/alerts.controller';
@@ -22,7 +26,7 @@ import { TasksController } from './interfaces/rest/tasks.controller';
 
 /** Project & Task Management bounded context wiring (ports -> adapters). */
 @Module({
-  imports: [TypeOrmModule.forFeature([ProjectOrmEntity, MilestoneOrmEntity, TaskOrmEntity])],
+  imports: [TypeOrmModule.forFeature([ProjectOrmEntity, MilestoneOrmEntity, TaskOrmEntity, MilestoneDocumentRequirementOrmEntity])],
   controllers: [ProjectsController, TasksController, AlertsController],
   providers: [
     ProjectCommandService,
@@ -34,6 +38,8 @@ import { TasksController } from './interfaces/rest/tasks.controller';
     { provide: TaskRepository, useClass: TypeOrmTaskRepository },
     { provide: ProjectSummaryReader, useClass: TypeOrmProjectSummaryReader },
     { provide: ProjectAlertReader, useClass: TypeOrmProjectAlertReader },
+    { provide: MilestoneDocumentRequirementRepository, useClass: TypeOrmMilestoneDocumentRequirementRepository },
+    DocumentRequirementSyncHandler,
   ],
 })
 export class ProjectsModule {}

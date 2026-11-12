@@ -62,6 +62,30 @@ services:
       interval: 5s
       retries: 10
 
+  document-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: document_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [document-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d document_db"]
+      interval: 5s
+      retries: 10
+
+  risk-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: risk_db
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+    volumes: [risk-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantage -d risk_db"]
+      interval: 5s
+      retries: 10
+
   iam-service:
     build: { context: ., dockerfile: iam-service/Dockerfile }
     environment:
@@ -115,6 +139,32 @@ services:
       notification-db: { condition: service_healthy }
       event-broker: { condition: service_healthy }
 
+  document-service:
+    build: { context: ., dockerfile: document-service/Dockerfile }
+    environment:
+      <<: *jwt
+      PORT: 3005
+      DATABASE_URL: postgres://vantage:vantage@document-db:5432/document_db
+      DB_SYNCHRONIZE: "true"
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: document
+    depends_on:
+      document-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
+
+  risk-service:
+    build: { context: ., dockerfile: risk-service/Dockerfile }
+    environment:
+      <<: *jwt
+      PORT: 3006
+      DATABASE_URL: postgres://vantage:vantage@risk-db:5432/risk_db
+      DB_SYNCHRONIZE: "true"
+      REDIS_URL: redis://event-broker:6379
+      SERVICE_NAME: risk
+    depends_on:
+      risk-db: { condition: service_healthy }
+      event-broker: { condition: service_healthy }
+
   api-gateway:
     build: ./api-gateway
     ports: ["3000:3000"]
@@ -126,10 +176,14 @@ services:
       PROJECT_TASK_SERVICE_URL: http://project-task-service:3002
       RESOURCE_SERVICE_URL: http://resource-service:3003
       NOTIFICATION_SERVICE_URL: http://notification-service:3004
-    depends_on: [iam-service, project-task-service, resource-service, notification-service]
+      DOCUMENT_SERVICE_URL: http://document-service:3005
+      RISK_SERVICE_URL: http://risk-service:3006
+    depends_on: [iam-service, project-task-service, resource-service, notification-service, document-service, risk-service]
 
 volumes:
   iam-data:
   project-task-data:
   resource-data:
   notification-data:
+  document-data:
+  risk-data:

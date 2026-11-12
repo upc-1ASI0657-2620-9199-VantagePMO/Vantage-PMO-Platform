@@ -31,7 +31,9 @@ export class ProjectSnapshotReplayService implements OnApplicationBootstrap {
       };
       await this.events.publish(ProjectEvents.PROJECT_UPDATED, payload);
     }
-    this.logger.log(`Replayed ${projects.length} project snapshot(s)`);
+    const milestones = await this.reader.findAllMilestones();
+    for (const m of milestones) await this.events.publish(ProjectEvents.MILESTONE_ADDED, { ...m, replay: true });
+    this.logger.log(`Replayed ${projects.length} project snapshot(s) and ${milestones.length} milestone(s)`);
     return projects.length;
   }
 }

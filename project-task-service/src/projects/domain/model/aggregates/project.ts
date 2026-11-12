@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { DomainError } from '../../../../shared/domain/domain-error';
+import { DomainError, ResourceNotFoundError } from '../../../../shared/domain/domain-error';
 import { Milestone } from '../entities/milestone';
 import { DateRange } from '../value-objects/date-range';
 import { Money } from '../value-objects/money';
@@ -104,6 +104,25 @@ export class Project {
       throw new DomainError('The milestone due date must be within the project period.', 'milestone-out-of-range');
     }
     this.props.milestones.push(milestone);
+    this.touch();
+    return milestone;
+  }
+
+  /**
+   * Closes a milestone (US22, US49). A milestone cannot be completed while any of its mandatory
+   * documents (defined in the Document context) is still missing.
+   */
+  completeMilestone(milestoneId: string, missingDocuments: string[]): Milestone {
+    this.ensureOpen();
+    const milestone = this.props.milestones.find((m) => m.id === milestoneId);
+    if (!milestone) throw new ResourceNotFoundError('Milestone', milestoneId);
+    if (missingDocuments.length) {
+      throw new DomainError(
+        `Milestone '${milestone.name}' cannot be completed: missing mandatory documents (${missingDocuments.join(', ')}).`,
+        'milestone-documents-missing',
+      );
+    }
+    milestone.complete();
     this.touch();
     return milestone;
   }

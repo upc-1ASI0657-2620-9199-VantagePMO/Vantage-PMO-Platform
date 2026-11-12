@@ -59,6 +59,18 @@ describe('NotificationFactory (ACL)', () => {
   });
 });
 
+describe('Critical risks (Sprint 3)', () => {
+  it('notifies the project owner and the risk responsible of a critical risk', () => {
+    const ns = NotificationFactory.fromEvent({
+      id: '9', type: 'risks.critical-risk-identified', key: 'critical-risk:r1:1', source: 'risk', occurredAt: '',
+      payload: { riskId: 'r1', projectId: 'p1', projectName: 'ERP', ownerId: 'owner', responsibleId: 'm1', title: 'Proveedor RFID', probability: 4, impact: 5, score: 20 },
+    });
+    expect(ns.map((n) => n.recipientId)).toEqual(['owner', 'm1']);
+    expect(ns[0].type).toBe(NotificationType.CRITICAL_RISK);
+    expect(new LogEmailChannel().supports(ns[0])).toBe(true);
+  });
+});
+
 describe('DomainEventsHandler (idempotent consumer)', () => {
   it('creates a single notification even if the same event is delivered twice', async () => {
     const bus = new InMemoryEventBus();

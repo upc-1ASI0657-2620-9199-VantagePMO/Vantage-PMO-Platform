@@ -19,6 +19,7 @@ export class Milestone {
   }
 
   complete(): void {
+    if (this.status === MilestoneStatus.COMPLETED) throw new DomainError(`Milestone '${this.name}' is already completed.`, 'milestone-already-completed');
     this.status = MilestoneStatus.COMPLETED;
   }
 
