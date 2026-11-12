@@ -11,6 +11,7 @@ const reader: ProjectAlertReader = {
     { projectId: 'p2', projectName: 'CRM Retail', ownerId: 'u2', status: 'IN_PROGRESS', lastActivityAt: new Date('2026-11-01T08:00:00Z') },
   ],
   findAllSnapshots: async () => [],
+  findAllMilestones: async () => [],
 };
 
 describe('ProjectAlertScanService', () => {

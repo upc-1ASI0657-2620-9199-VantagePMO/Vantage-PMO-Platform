@@ -7,6 +7,7 @@ import { TaskCommandService } from '../../application/internal/command-services/
 import { ProjectQueryService } from '../../application/internal/query-services/project-query.service';
 import {
   AddMilestoneCommand,
+  CompleteMilestoneCommand,
   CreateProjectCommand,
   CreateTaskCommand,
   UpdateProjectCommand,
@@ -97,6 +98,19 @@ export class ProjectsController {
     @Body() body: CreateMilestoneResource,
   ): Promise<MilestoneResource> {
     const milestone = await this.commands.handleAddMilestone(new AddMilestoneCommand(projectId, body.name, body.dueDate));
+    return MilestoneResourceAssembler.toResource(milestone);
+  }
+
+  @Patch(':projectId/milestones/:milestoneId/completion')
+  @ApiOperation({ summary: 'Complete a milestone; blocked while mandatory documents are missing (US22, US49)' })
+  @ApiOkResponse({ type: MilestoneResource })
+  @ApiResponse({ status: 404, description: 'Project or milestone not found' })
+  @ApiResponse({ status: 422, description: 'Missing mandatory documents (milestone-documents-missing) or milestone already completed' })
+  async completeMilestone(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('milestoneId', ParseUUIDPipe) milestoneId: string,
+  ): Promise<MilestoneResource> {
+    const milestone = await this.commands.handleCompleteMilestone(new CompleteMilestoneCommand(projectId, milestoneId));
     return MilestoneResourceAssembler.toResource(milestone);
   }
 
