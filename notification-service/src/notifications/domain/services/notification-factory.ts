@@ -9,6 +9,7 @@ export const SUBSCRIBED_EVENTS = [
   'projects.task-assigned',
   'resources.member-allocated',
   'resources.member-overallocated',
+  'risks.critical-risk-identified',
 ] as const;
 
 const formatDate = (iso: string) => {
@@ -61,6 +62,15 @@ export class NotificationFactory {
           message: `${p.memberName} suma ${p.totalAllocation} % de carga entre el ${formatDate(p.startDate)} y el ${formatDate(p.endDate)} tras su asignación a ${p.projectName}.`,
           link: `/resources/availability`,
         })];
+      case 'risks.critical-risk-identified': {
+        const recipients = [...new Set([p.ownerId, p.responsibleId].filter(Boolean))] as string[];
+        return recipients.map((recipientId) => Notification.create({
+          recipientId, type: NotificationType.CRITICAL_RISK, eventKey: key,
+          title: `Riesgo crítico en ${p.projectName}`,
+          message: `"${p.title}" tiene severidad ${p.score} (probabilidad ${p.probability} × impacto ${p.impact}). Revisa su plan de mitigación.`,
+          link: `/projects/${p.projectId}/risks`,
+        }));
+      }
       default:
         return [];
     }
