@@ -38,3 +38,9 @@ Feature: Project documents
     When I upload the file "script.exe" of type "application/x-msdownload" with content "MZ" to the task
     Then the response status should be 422
     And the response field "type" should be "file-type-not-allowed"
+
+  @US45
+  Scenario: Empty optional form fields are ignored
+    When I upload the file "minuta.pdf" with content "Minuta de reunión" leaving the optional fields empty
+    Then the response status should be 201
+    And the response field "taskId" should be "null"
