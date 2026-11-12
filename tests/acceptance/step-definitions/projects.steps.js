@@ -17,6 +17,7 @@ Then('the project status should be {string}', function (status) {
 
 When('I add the milestone {string} due on {string}', async function (name, dueDate) {
   await this.call('POST', `/api/v1/projects/${this.project.id}/milestones`, { name, dueDate });
+  if (this.response.status === 201) this.milestone = this.body;
 });
 
 Given('the project has {int} tasks of which {int} are completed', async function (total, completed) {

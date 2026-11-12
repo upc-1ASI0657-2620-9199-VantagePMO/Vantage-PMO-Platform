@@ -53,6 +53,21 @@ class VantageWorld {
     return this.body;
   }
 
+  /** Multipart upload (file + text fields) through the gateway. */
+  async upload(path, fileName, contentType, content, fields = {}, token = this.token) {
+    const form = new FormData();
+    form.append('file', new Blob([content], { type: contentType }), fileName);
+    for (const [k, v] of Object.entries(fields)) if (v !== undefined && v !== null) form.append(k, v);
+    this.response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const text = await this.response.text();
+    this.body = text ? JSON.parse(text) : null;
+    return this.body;
+  }
+
   async signUp(fullName, email, password, role = 'MEMBER') {
     return this.call('POST', '/api/v1/authentication/sign-up', { fullName, email, password, role }, null);
   }

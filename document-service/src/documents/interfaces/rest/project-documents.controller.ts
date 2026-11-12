@@ -9,7 +9,7 @@ import { DocumentQueryService } from '../../application/internal/query-services/
 import { UploadDocumentCommand } from '../../domain/model/commands/document-commands';
 import { GetProjectDocumentsQuery } from '../../domain/model/queries/document-queries';
 import { FileContent } from '../../domain/model/value-objects/file-content';
-import { DocumentFilterResource, DocumentResource, UploadDocumentResource, UploadResultResource } from './resources/document.resources';
+import { DocumentFilterResource, DocumentResource, UploadDocumentFormResource, UploadDocumentResource, UploadResultResource } from './resources/document.resources';
 import { DocumentAssembler } from './transform/document.assembler';
 
 @ApiTags('Documents')
@@ -26,7 +26,7 @@ export class ProjectDocumentsController {
   @Post()
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: FileContent.MAX_BYTES + 1 } }))
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UploadDocumentResource })
+  @ApiBody({ type: UploadDocumentFormResource })
   @ApiOperation({ summary: 'Upload a document (multipart) to a project, task or milestone; same name creates a new version (US45, US05, US35)' })
   @ApiCreatedResponse({ type: UploadResultResource })
   @ApiResponse({ status: 404, description: 'Project, milestone or requirement not found' })

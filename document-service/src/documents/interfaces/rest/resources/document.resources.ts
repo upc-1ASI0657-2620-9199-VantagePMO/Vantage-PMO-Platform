@@ -2,10 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
+/** Text fields of the multipart upload (validated). The binary arrives through @UploadedFile. */
 export class UploadDocumentResource {
-  @ApiProperty({ type: 'string', format: 'binary', description: 'File (PDF, Office, image, text, CSV or ZIP; max 5 MB)' })
-  file: unknown;
-
   @ApiPropertyOptional({ example: 'Acta de aceptación', description: 'Logical name; uploading again with the same name creates a new version (US35). Defaults to the requirement name or the file name.' })
   @IsOptional() @IsString() @IsNotEmpty() @MaxLength(150)
   name?: string;
@@ -21,6 +19,12 @@ export class UploadDocumentResource {
   @ApiPropertyOptional({ format: 'uuid', description: 'Mandatory document that this upload fulfills (US21)' })
   @IsOptional() @IsUUID()
   requirementId?: string;
+}
+
+/** Swagger description of the whole multipart body (file + fields). */
+export class UploadDocumentFormResource extends UploadDocumentResource {
+  @ApiProperty({ type: 'string', format: 'binary', description: 'File (PDF, Office, image, text, CSV or ZIP; max 5 MB)' })
+  file: unknown;
 }
 
 export class DocumentVersionResource {
