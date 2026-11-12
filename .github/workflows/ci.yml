@@ -34,7 +34,7 @@ jobs:
     needs: event-bus-library
     strategy:
       matrix:
-        service: [api-gateway, iam-service, project-task-service, resource-service, notification-service]
+        service: [api-gateway, iam-service, project-task-service, resource-service, notification-service, document-service, risk-service]
     defaults:
       run:
         working-directory: ${{ matrix.service }}
@@ -79,20 +79,22 @@ jobs:
           node-version: 22
       - name: Create one database per service
         run: |
-          for db in iam_db project_task_db resource_db notification_db; do
+          for db in iam_db project_task_db resource_db notification_db document_db risk_db; do
             PGPASSWORD=vantage psql -h localhost -U vantage -d vantage -c "CREATE DATABASE $db;"
           done
       - name: Build services
         run: |
           (cd libs/event-bus && npm ci && npm run build)
-          for s in api-gateway iam-service project-task-service resource-service notification-service; do (cd $s && npm ci && npm run build); done
+          for s in api-gateway iam-service project-task-service resource-service notification-service document-service risk-service; do (cd $s && npm ci && npm run build); done
       - name: Start services
         run: |
           (cd iam-service && PORT=3001 SERVICE_NAME=iam DATABASE_URL=postgres://vantage:vantage@localhost:5432/iam_db node dist/main.js &)
           (cd project-task-service && PORT=3002 SERVICE_NAME=project-task ALERT_SCAN_INTERVAL_MS=0 DATABASE_URL=postgres://vantage:vantage@localhost:5432/project_task_db node dist/main.js &)
           (cd resource-service && PORT=3003 SERVICE_NAME=resource DATABASE_URL=postgres://vantage:vantage@localhost:5432/resource_db node dist/main.js &)
           (cd notification-service && PORT=3004 SERVICE_NAME=notification DATABASE_URL=postgres://vantage:vantage@localhost:5432/notification_db node dist/main.js &)
-          (cd api-gateway && PORT=3000 IAM_SERVICE_URL=http://localhost:3001 PROJECT_TASK_SERVICE_URL=http://localhost:3002 RESOURCE_SERVICE_URL=http://localhost:3003 NOTIFICATION_SERVICE_URL=http://localhost:3004 node dist/main.js &)
+          (cd document-service && PORT=3005 SERVICE_NAME=document DATABASE_URL=postgres://vantage:vantage@localhost:5432/document_db node dist/main.js &)
+          (cd risk-service && PORT=3006 SERVICE_NAME=risk DATABASE_URL=postgres://vantage:vantage@localhost:5432/risk_db node dist/main.js &)
+          (cd api-gateway && PORT=3000 IAM_SERVICE_URL=http://localhost:3001 PROJECT_TASK_SERVICE_URL=http://localhost:3002 RESOURCE_SERVICE_URL=http://localhost:3003 NOTIFICATION_SERVICE_URL=http://localhost:3004 DOCUMENT_SERVICE_URL=http://localhost:3005 RISK_SERVICE_URL=http://localhost:3006 node dist/main.js &)
           for i in $(seq 1 30); do curl -sf http://localhost:3000/health && break; sleep 2; done
       - name: Run Cucumber
         working-directory: tests/acceptance
