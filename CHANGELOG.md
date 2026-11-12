@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.2.0] - 2026-11-12 — Sprint 3
+
+### Added
+- **Document Service**: subida multipart de documentos a proyectos, tareas o hitos con URL de acceso (US45, US05), historial de versiones por nombre y rechazo de contenido duplicado (US35), documentos obligatorios por hito (US21). Almacenamiento detrás del puerto `FileStorage` (adaptador PostgreSQL).
+- **Risk Service**: registro de riesgos con severidad probabilidad × impacto (US28), reevaluación con historial y ciclo de vida (US29), registro ordenado por severidad (US55) y vista priorizada del portafolio con riesgos críticos resaltados (US30).
+- **Project & Task Service**: cierre de hitos `PATCH /projects/{id}/milestones/{mid}/completion` bloqueado mientras falten documentos obligatorios (US22, US49), réplica de requisitos documentales y eventos `projects.milestone-added` / `milestone-completed`.
+- **Notification Service**: aviso `CRITICAL_RISK` al responsable del proyecto y al responsable del riesgo (canal in-app y correo).
+- **API Gateway**: rutas y circuit breakers para Document y Risk; Swagger agregado con seis servicios.
+- Pruebas unitarias, 18 escenarios BDD nuevos y colección Postman del Sprint 3 con archivos de prueba.
+
 ## [1.1.0] - 2026-11-05 — Sprint 2
 
 ### Added

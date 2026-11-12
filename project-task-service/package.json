@@ -1,6 +1,6 @@
 {
   "name": "project-task-service",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Vantage PMO - Project & Task Management bounded context (core domain)",
   "private": true,
   "license": "UNLICENSED",
