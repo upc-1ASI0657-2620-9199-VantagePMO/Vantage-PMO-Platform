@@ -12,6 +12,13 @@ describe('Gateway routing table', () => {
     ['/api/v1/allocations/456', 'resource', false],
     ['/api/v1/resources/availability', 'resource', false],
     ['/api/v1/notifications/unread-count', 'notification', false],
+    ['/api/v1/projects/123/documents', 'document', false],
+    ['/api/v1/projects/123/milestones/456/document-requirements', 'document', false],
+    ['/api/v1/projects/123/milestones/456/completion', 'projectTask', false],
+    ['/api/v1/documents/789/content', 'document', false],
+    ['/api/v1/document-requirements/789', 'document', false],
+    ['/api/v1/projects/123/risks', 'risk', false],
+    ['/api/v1/risks/priority', 'risk', false],
   ])('routes %s to %s (public=%s)', (path, service, isPublic) => {
     const route = resolveRoute(path);
     expect(route?.service).toBe(service);
